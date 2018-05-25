@@ -160,7 +160,17 @@
 					}
 				}
 				xhrPrinter.send();
-																																					   
+				
+				var xhrEvaluation = new XMLHttpRequest();
+				xhrEvaluation.open("GET", "Evaluation.txt");
+				xhrEvaluation.onload = function () {
+					if (xhrEvaluation.readyState === 4 /*Done*/) {
+						if (xhrEvaluation.status === 200 || xhrEvaluation.status == 0) {
+							document.getElementById('EvalPaidTime').innerHTML = /Paid time +:(.*)/.exec(xhrEvaluation.responseText)[1];	
+						}
+					}
+				}
+				xhrEvaluation.send();																																		   
 			}
 				
 			function drawCharts() {		
@@ -172,7 +182,7 @@
 					if (xhrGensol.readyState === 4 /*Done*/) {
 						if (xhrGensol.status === 200 || xhrGensol.status == 0) {
 							// Gensol
-							document.getElementById('GensolNumberOfDuties').innerHTML = /Cnb_duties [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1];
+							document.getElementById('GensolAssignedDuties').innerHTML = /Cnb_duties [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1];
 							document.getElementById('GensolFreeDuties').innerHTML = printFreeDuties(/CspCrew [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1]);
 							
 							var match = {};	
@@ -294,8 +304,8 @@
 				<div class="columns">
 					<div class="column">
 						<table style="text-align:right;">
-							<tr><td>Paid time:</td><td id="" style="text-align:left;">Analyzing...</td></tr>
-							<tr><td>Number of duties:</td><td id="GensolNumberOfDuties" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td>Paid time:</td><td id="EvalPaidTime" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td>Assigned duties:</td><td id="GensolAssignedDuties" style="text-align:left;">Analyzing...</td></tr>
 							<tr><td>Free duties:</td><td id="GensolFreeDuties" style="text-align:left;">Analyzing...</td></tr>
 						</table>
 					</div>
