@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>Analyzor</title>
+
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+		<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+ 
+		<!-- CSS -->
+		<style>
+			html {
+				height: 100%;
+				margin: 0;
+				padding: 0;
+				background-color: lightblue;
+			}
+		
+			body {
+				height: 100%;
+				margin: 0;
+				padding: 0;
+			
+				color: black;
+				text-align: center; /* !!! */
+				font-family: Arial;
+			}
+		
+			/* Fix "bug" in FireFox */
+			hr {
+				clear: both;
+			}
+		
+			/* Style the tab */
+			.tab {
+				overflow: hidden;
+				border: 1px solid darkblue;
+				background-color: lightblue;
+			}
+		
+			/* Style the buttons inside the tab */
+			.tab button {
+				background-color: inherit;
+				float: left;
+				border: none;
+				outline: none;
+				cursor: pointer;
+				padding: 14px 16px;
+				transition: 0.3s;
+				font-size: 17px;
+			}
+		
+			/* Change background color of buttons on hover */
+			.tab button:hover {
+				background-color: lightskyblue;
+			}
+		
+			/* Create an active/current tablink class */
+			.tab button.active {
+				background-color: skyblue;
+			}
+		
+			/* Style the tab content */
+			.tabcontent {
+				display: none;
+				padding: 6px 12px;
+				border: 1px solid darkblue;
+				border-top: none;
+			}
+		
+			.tooltip {
+				position: relative;
+				display: inline-block;
+				border-bottom: 1px dotted black;
+			}
+		
+			.tooltip .tooltiptext {
+				visibility: hidden;
+				width: 250px;
+				background-color: black;
+				color: white;
+				text-align: center;
+				border-radius: 6px;
+				padding: 5px 0;
+			
+				/* Position the tooltip */
+				position: absolute;
+				z-index: 1;
+			}
+		
+			.tooltip:hover .tooltiptext {
+				visibility: visible;
+			}
+		
+			.columns {
+				float: left;
+				position: relative;	       /* This fixes the IE7 overflow hidden bug */
+				clear: both;
+				overflow: hidden;		   /* This chops off any overhanging divs */
+				width: 100%;
+			
+			}
+
+			.column {
+				float: left;
+				position: relative;
+				padding: 0% 1%;             /* Laisser 1% a gauche et a droite de la colonne*/
+				width: 23%;                 /* (1% + 23% + 1%) * 4 = 100% */
+			}
+		
+			footer {
+				font-size: 80%;
+			}
+		</style>
+		
+		<!-- JS FUNCTIONS -->
+		<script>
+			var ArcType = Object.freeze({"total":0, "technical":1, "joinup":2, "coffee":3, "mealbreak":4, "splitbreak":5});
+			
+			function analyze() {
+				console.log("Analyzing...");
+				
+				var xhrGencol = new XMLHttpRequest();
+				xhrGencol.open("GET", "g001/gencol.log");
+				xhrGencol.onload = function () {
+					if (xhrGencol.readyState === 4 /*Done*/) {
+						if (xhrGencol.status === 200 || xhrGencol.status == 0) {
+							// Clean the test
+							document.getElementById('BrowserTest').innerHTML = "";
+							
+							// Gencol
+							document.getElementById('GencolNumberArcs').innerHTML = printCountForArcType(ArcType.total, /(Arcs +: +)([0-9]+)/.exec(xhrGencol.responseText)[2]);
+							document.getElementById('GencolNumberTasks').innerHTML = printTaskCount(/(Tasks +: +)([0-9]+)/.exec(xhrGencol.responseText)[2]);
+							
+						}
+					}
+				}
+				xhrGencol.send();
+				
+				var xhrPrinter = new XMLHttpRequest();
+				xhrPrinter.open("GET", "printer.prt");
+				xhrPrinter.onload = function () {
+					if (xhrPrinter.readyState === 4 /*Done*/) {
+						if (xhrPrinter.status === 200 || xhrPrinter.status == 0) {
+							var CountByType = [];
+							CountByType[ArcType.joinup] = 22000;
+							CountByType[ArcType.coffee] = 55000;
+							CountByType[ArcType.total] = 999999;
+							
+							// Gennet
+							document.getElementById('GennetJoinupCount').innerHTML = printCountForArcType(ArcType.joinup, CountByType[ArcType.joinup]);
+							document.getElementById('GennetCoffeeCount').innerHTML = printCountForArcType(ArcType.coffee, CountByType[ArcType.coffee]);
+							document.getElementById('GennetTotalCount').innerHTML = printCountForArcType(ArcType.total, CountByType[ArcType.total]);
+							
+							// Gencol
+							document.getElementById('GencolGap').innerHTML = /(Gap +: +.*\( +)(.*%)/.exec(xhrPrinter.responseText)[2];
+							document.getElementById('GencolStopCond').innerHTML = /(Stopping condition +: +)(.*)/.exec(xhrPrinter.responseText)[2];
+						
+						}
+					}
+				}
+				xhrPrinter.send();
+			}
+				
+			function generate() {
+				console.log("Generating...");
+				
+				//Gencol
+				// Load google charts
+				google.charts.load('current', {packages:['corechart']});
+				google.charts.setOnLoadCallback(drawCharts);
+			}
+		
+				
+			function drawCharts() {
+				var data1 = google.visualization.arrayToDataTable([['Duty type', 'Duty count'], ['A', 22], ['B', 1], ['C', 4], ['D', 3], ['E', 8]]);
+				var options1 = {title:"Duty count by Duty type",
+								width:400,
+								height:300,
+								backgroundColor:"transparent",
+								pieHole: 0.4,
+								pieSliceText:"value",
+								chartArea: {width:"95%", height:"80%"}
+				};
+				
+				var chart1 = new google.visualization.PieChart(document.getElementById('PieChartDutyByDutyType'));
+				chart1.draw(data1, options1);
+
+																			   
+				var data2 = google.visualization.arrayToDataTable([['Crew base', 'Duty count'], ['A', 22], ['B', 1], ['C', 4], ['D', 3], ['E', 8]]);
+			    var options2 = {title:"Duty count by Crew base",
+								width:400,
+							    height:300,
+			                    backgroundColor:"transparent",
+			                    pieHole: 0.4,
+								pieSliceText:"value",
+			                    chartArea: {width:"95%", height:"80%"}
+			     };
+			 
+			    var chart2 = new google.visualization.PieChart(document.getElementById('PieChartDutyByCrewBase'));
+			    chart2.draw(data2, options2);
+			}
+
+			function printCountForArcType(type, count) {
+				var MaxCountByType = [];
+				MaxCountByType[ArcType.total] = 300000;
+				MaxCountByType[ArcType.joinup] = 50000;
+				MaxCountByType[ArcType.coffee] = 50000;
+				
+				if (count > MaxCountByType[type]) {
+					var GoogleWarningIconWithTooltip = "<div class='tooltip'><i class='material-icons' style='font-size:15px;color:yellow'>warning</i><span class='tooltiptext'>Arc count is above the maximum recommended of " +MaxCountByType[type].toString() + ".</span></div>";
+					return (count.toString() + GoogleWarningIconWithTooltip);
+				}
+				else
+					return (count.toString());
+			}
+		
+			function printTaskCount(count) {
+				var MaxCount = 1500;
+			
+				if (count > MaxCount) {
+					var GoogleWarningIconWithTooltip = "<div class='tooltip'><i class='material-icons' style='font-size:15px;color:yellow'>warning</i><span class='tooltiptext'>Task count is above the maximum recommended of " +MaxCount.toString() + ". You should use decomposition.</span></div>";
+					return (count.toString() + GoogleWarningIconWithTooltip);
+				}
+				else
+				return (count.toString());
+			}
+		
+			function openTab(evt, tabId) {
+				// Hide content
+				var tabcontent = document.getElementsByClassName("tabcontent");
+				for (var i = 0; i < tabcontent.length; i++) {
+					tabcontent[i].style.display = "none";
+				}
+				
+				// Deactivate tablinks
+				var tablinks = document.getElementsByClassName("tablinks");
+				for (var i = 0; i < tablinks.length; i++) {
+					tablinks[i].className = tablinks[i].className.replace(" active", "");
+				}
+				
+				// Activate the one we clicked on
+				document.getElementById(tabId).style.display = "block";
+				evt.currentTarget.className += " active";
+			}
+		</script>
+	</head>
+
+	<!-- BODY -->
+	<body>		
+		<body>
+			<h2>Analyzor v0.01</h2>
+			<h3 id="BrowserTest" style="color:red">Browser not supported (try Firefox)</h3>
+			<div class="tab">
+				<button class="tablinks" onclick="openTab(event, 'General')" id="defaultOpen">General</button>
+				<button class="tablinks" onclick="openTab(event, 'Tools')">Tools</button>
+				<button class="tablinks" onclick="openTab(event, 'DevTest')">Dev test</button>
+			</div>
+			
+			<div id="General" class="tabcontent">
+				<h3>Solution statistics</h3>
+				<div class="columns">
+					<div class="column">
+						<div id="PieChartDutyByDutyType">Connecting to Google...</div>
+					</div>
+					<div class="column">
+						<div id="PieChartDutyByCrewBase">Connecting to Google...</div>
+					</div>
+					<div class="column">
+						<table style="text-align:right;">
+							<tr><td>Paid time:</td><td id="" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td>Free duties:</td><td id="" style="text-align:left;">Analyzing...</td></tr>
+						</table>
+					</div>
+				</div>
+				<hr>
+				<h3>Gennet &amp; Gencol statistics </h3>
+				<div class="columns">
+					<div class="column">
+						<fieldset>
+							<legend>Arc count by break type</legend>
+							<table style="width:100%;text-align:right;">
+								<tr><td>Joinup:</td><td id="GennetJoinupCount" style="text-align:left;">Analyzing...</td></tr>
+								<tr><td>Coffee:</td><td id="GennetCoffeeCount" style="text-align:left;">Analyzing...</td></tr>
+								<tr><td>Mealbreak:</td><td id="GennetMealCount" style="text-align:left;">Analyzing...</td></tr>
+								<tr><td>Splitbreak:</td><td id="GennetSplitCount" style="text-align:left;">Analyzing...</td></tr>
+								<tr><td>Total:</td><td id="GennetTotalCount" style="text-align:left;">Analyzing...</td></tr>
+							</table>
+						</fieldset>
+					</div>
+					<div class="column">
+						toto tata<br>
+						toto<br>
+						tata<br>
+						tata<br>
+						tat<br>
+						tat<br>
+						ta<br>
+						t<br>
+					</div>
+					<div class="column">
+						<table style="text-align:right;">
+							<tr><td>Arc count:</td><td id="GencolNumberArcs" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td>Task count:</td><td id="GencolNumberTasks" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td>Stopping condition:</td><td id="GencolStopCond" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td>Gap:</td><td id="GencolGap" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td></td><td></td></tr>
+							<tr><td>Solution cost:</td><td id="GencolSolutionCost" style="text-align:left;">Analyzing...</td></tr>
+						</table>
+					</div>
+					<div class="column">
+						Node 0 free pieces:
+					</div>
+				</div>
+				
+			
+				<hr>
+			</div>
+
+			<div id="Tools" class="tabcontent">
+				<button type="button" onclick="alert('Cleaned!')">Clean</button>
+				<button type="button" onclick="alert('Cleaned and zipped!')">Clean, zip, and mail</button>
+			</div>
+			<div id="DevTest" class="tabcontent">
+				<div id="DevDiv">Hello</div>
+			</div>
+			
+			<!-- SCRIPTS -->
+			<script type="text/javascript">
+				// Get the element with id="defaultOpen" and click on it
+				document.getElementById("defaultOpen").click();
+				
+				// Analyze the job
+				analyze();
+				generate();
+			</script>
+		</body>
+		
+		<footer>
+			&copy; Better Call Nicole 2018
+		</footer>
+	</body>
+</html>
