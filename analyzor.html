@@ -129,8 +129,8 @@
 							document.getElementById('BrowserTest').innerHTML = "";
 							
 							// Gencol
-							document.getElementById('GencolNumberArcs').innerHTML = printCountForArcType(ArcType.total, /(Arcs +: +)([0-9]+)/.exec(xhrGencol.responseText)[2]);
-							document.getElementById('GencolNumberTasks').innerHTML = printTaskCount(/(Tasks +: +)([0-9]+)/.exec(xhrGencol.responseText)[2]);
+							document.getElementById('GencolNumberArcs').innerHTML = printCountForArcType(ArcType.total, /Arcs +: +([0-9]+)/.exec(xhrGencol.responseText)[1]);
+							document.getElementById('GencolNumberTasks').innerHTML = printTaskCount(/Tasks +: +([0-9]+)/.exec(xhrGencol.responseText)[1]);
 							
 						}
 					}
@@ -153,52 +153,73 @@
 							document.getElementById('GennetTotalCount').innerHTML = printCountForArcType(ArcType.total, CountByType[ArcType.total]);
 							
 							// Gencol
-							document.getElementById('GencolGap').innerHTML = /(Gap +: +.*\( +)(.*%)/.exec(xhrPrinter.responseText)[2];
-							document.getElementById('GencolStopCond').innerHTML = /(Stopping condition +: +)(.*)/.exec(xhrPrinter.responseText)[2];
+							document.getElementById('GencolGap').innerHTML = /Gap +: +.*\( +(.*%)/.exec(xhrPrinter.responseText)[1];
+							document.getElementById('GencolStopCond').innerHTML = /Stopping condition +: +(.*)/.exec(xhrPrinter.responseText)[1];
 						
 						}
 					}
 				}
 				xhrPrinter.send();
+																																					   
 			}
 				
-			function generate() {
-				console.log("Generating...");
+			function drawCharts() {		
+				console.log("Drawing charts...");
 				
-				//Gencol
-				// Load google charts
-				google.charts.load('current', {packages:['corechart']});
-				google.charts.setOnLoadCallback(drawCharts);
-			}
-		
+				var xhrGensol = new XMLHttpRequest();
+				xhrGensol.open("GET", "g001/gencol.sol");
+				xhrGensol.onload = function () {
+					if (xhrGensol.readyState === 4 /*Done*/) {
+						if (xhrGensol.status === 200 || xhrGensol.status == 0) {
+							// Gensol
+							document.getElementById('GensolNumberOfDuties').innerHTML = /Cnb_duties [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1];
+							document.getElementById('GensolFreeDuties').innerHTML = printFreeDuties(/CspCrew [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1]);
+							
+							var match = {};	
+							var params1 = [['Duty type', 'Duty count']];						
+							var re1 = /Ctype_(.*) [0-9]+ ([0-9]+);/g
+							while (match = re1.exec(xhrGensol.responseText)){
+								params1.push([match[1], parseInt(match[2])]);
+							}
+								
+							var data1 = google.visualization.arrayToDataTable(params1);
+							var options1 = {title:"Duty count by Duty type",
+												width:400,
+												height:300,
+												backgroundColor:"transparent",
+												pieHole: 0.4,
+												pieSliceText:"value",
+												chartArea: {width:"95%", height:"80%"}
+							};
 				
-			function drawCharts() {
-				var data1 = google.visualization.arrayToDataTable([['Duty type', 'Duty count'], ['A', 22], ['B', 1], ['C', 4], ['D', 3], ['E', 8]]);
-				var options1 = {title:"Duty count by Duty type",
-								width:400,
-								height:300,
-								backgroundColor:"transparent",
-								pieHole: 0.4,
-								pieSliceText:"value",
-								chartArea: {width:"95%", height:"80%"}
-				};
-				
-				var chart1 = new google.visualization.PieChart(document.getElementById('PieChartDutyByDutyType'));
-				chart1.draw(data1, options1);
+							var chart1 = new google.visualization.PieChart(document.getElementById('PieChartDutyByDutyType'));
+							chart1.draw(data1, options1);
 
+							var params2 = [['Crew base', 'Duty count']];						
+							var re2 = /Cbase_(.*) [0-9]+ ([0-9]+);/g
+							while (match = re2.exec(xhrGensol.responseText)){
+								params2.push([match[1], parseInt(match[2])]);
+							}
 																			   
-				var data2 = google.visualization.arrayToDataTable([['Crew base', 'Duty count'], ['A', 22], ['B', 1], ['C', 4], ['D', 3], ['E', 8]]);
-			    var options2 = {title:"Duty count by Crew base",
-								width:400,
-							    height:300,
-			                    backgroundColor:"transparent",
-			                    pieHole: 0.4,
-								pieSliceText:"value",
-			                    chartArea: {width:"95%", height:"80%"}
-			     };
+							var data2 = google.visualization.arrayToDataTable(params2);
+			    			var options2 = {title:"Duty count by Crew base",
+												width:400,
+							    				height:300,
+			                    			backgroundColor:"transparent",
+			                    			pieHole: 0.4,
+												pieSliceText:"value",
+			                    			chartArea: {width:"95%", height:"80%"}
+			     			};
 			 
-			    var chart2 = new google.visualization.PieChart(document.getElementById('PieChartDutyByCrewBase'));
-			    chart2.draw(data2, options2);
+			    			var chart2 = new google.visualization.PieChart(document.getElementById('PieChartDutyByCrewBase'));
+			    			chart2.draw(data2, options2);
+			    											   
+						   }
+						}
+					}
+				xhrGensol.send();
+																			 
+				
 			}
 
 			function printCountForArcType(type, count) {
@@ -214,6 +235,17 @@
 				else
 					return (count.toString());
 			}
+			
+			function printFreeDuties(count) {
+				var MaxCount = 0;
+			
+				if (count > MaxCount) {
+					var GoogleWarningIcon = "<i class='material-icons' style='font-size:15px;color:yellow'>warning</i>";
+					return (count.toString() + GoogleWarningIcon);
+				}
+				else
+					return (count.toString());
+			}
 		
 			function printTaskCount(count) {
 				var MaxCount = 1500;
@@ -223,7 +255,7 @@
 					return (count.toString() + GoogleWarningIconWithTooltip);
 				}
 				else
-				return (count.toString());
+					return (count.toString());
 			}
 		
 			function openTab(evt, tabId) {
@@ -269,7 +301,8 @@
 					<div class="column">
 						<table style="text-align:right;">
 							<tr><td>Paid time:</td><td id="" style="text-align:left;">Analyzing...</td></tr>
-							<tr><td>Free duties:</td><td id="" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td>Number of duties:</td><td id="GensolNumberOfDuties" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td>Free duties:</td><td id="GensolFreeDuties" style="text-align:left;">Analyzing...</td></tr>
 						</table>
 					</div>
 				</div>
@@ -332,7 +365,11 @@
 				
 				// Analyze the job
 				analyze();
-				generate();
+				
+				// Google charts
+				console.log("Loading charts...");
+				google.charts.load('current', {packages:['corechart']});
+				google.charts.setOnLoadCallback(drawCharts);
 			</script>
 		</body>
 		
