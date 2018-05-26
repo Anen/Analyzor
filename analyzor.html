@@ -117,8 +117,8 @@
 		<script>
 			var ArcType = Object.freeze({"total":0, "technical":1, "joinup":2, "coffee":3, "mealbreak":4, "splitbreak":5});
 			
-			function analyze() {
-				console.log("Analyzing...");
+			function drawGaugeChart() {
+				console.log("Drawing gauge chart...");
 				
 				var xhrGencol = new XMLHttpRequest();
 				xhrGencol.open("GET", "g001/gencol.log");
@@ -129,6 +129,7 @@
 							document.getElementById('BrowserTest').innerHTML = "";
 							
 							// Gencol
+							document.getElementById('GennetTotalCount').innerHTML = printCountForArcType(ArcType.total, /Arcs +: +([0-9]+)/.exec(xhrGencol.responseText)[1]);
 							document.getElementById('GencolNumberArcs').innerHTML = printCountForArcType(ArcType.total, /Arcs +: +([0-9]+)/.exec(xhrGencol.responseText)[1]);
 							document.getElementById('GencolNumberTasks').innerHTML = printTaskCount(/Tasks +: +([0-9]+)/.exec(xhrGencol.responseText)[1]);
 							
@@ -150,11 +151,29 @@
 							// Gennet
 							document.getElementById('GennetJoinupCount').innerHTML = printCountForArcType(ArcType.joinup, CountByType[ArcType.joinup]);
 							document.getElementById('GennetCoffeeCount').innerHTML = printCountForArcType(ArcType.coffee, CountByType[ArcType.coffee]);
-							document.getElementById('GennetTotalCount').innerHTML = printCountForArcType(ArcType.total, CountByType[ArcType.total]);
+							//document.getElementById('GennetTotalCount').innerHTML = printCountForArcType(ArcType.total, CountByType[ArcType.total]);
 							
 							// Gencol
-							document.getElementById('GencolGap').innerHTML = /Gap +: +.*\( +(.*%)/.exec(xhrPrinter.responseText)[1];
-							document.getElementById('GencolStopCond').innerHTML = /Stopping condition +: +(.*)/.exec(xhrPrinter.responseText)[1];
+							var gap = /Gap +: +.*\( +(.*)%/.exec(xhrPrinter.responseText)[1];
+							document.getElementById('PrinterGap').innerHTML = gap + " %";
+							document.getElementById('PrinterStopCond').innerHTML = /Stopping condition +: +(.*)/.exec(xhrPrinter.responseText)[1];
+						
+							
+        					var data = google.visualization.arrayToDataTable([
+          							['Label', 'Value'],
+          							['Gap (%)', parseFloat(gap)]
+        					]);
+
+        					var options = {width:100, height:100,
+          									max:3,
+          									majorTicks:["0", "1", "2", "3"],
+          									greenFrom:0, greenTo:0.5,
+          									yellowFrom:0.5, yellowTo: 2,
+          									redFrom:2, redTo:4
+        					};
+
+        					var chart = new google.visualization.Gauge(document.getElementById('GaugeChartGap'));
+        					chart.draw(data, options);
 						
 						}
 					}
@@ -166,15 +185,16 @@
 				xhrEvaluation.onload = function () {
 					if (xhrEvaluation.readyState === 4 /*Done*/) {
 						if (xhrEvaluation.status === 200 || xhrEvaluation.status == 0) {
-							document.getElementById('EvalPaidTime').innerHTML = /Paid time +:(.*)/.exec(xhrEvaluation.responseText)[1];	
+							document.getElementById('EvalPaidTime').innerHTML = /Paid time +:(.*)/.exec(xhrEvaluation.responseText)[1];					
+							document.getElementById('EvalSolutionCost').innerHTML = /Total cost +:(.*) .*%/.exec(xhrEvaluation.responseText)[1];							
 						}
 					}
 				}
 				xhrEvaluation.send();																																		   
 			}
 				
-			function drawCharts() {		
-				console.log("Drawing charts...");
+			function drawPieCharts() {		
+				console.log("Drawing pie charts...");
 				
 				var xhrGensol = new XMLHttpRequest();
 				xhrGensol.open("GET", "g001/gencol.sol");
@@ -194,7 +214,7 @@
 								
 							var data1 = google.visualization.arrayToDataTable(params1);
 							var options1 = {title:"Duty count by Duty type",
-												width:400,
+												width:300,
 												height:300,
 												backgroundColor:"transparent",
 												pieHole: 0.4,
@@ -213,7 +233,7 @@
 																			   
 							var data2 = google.visualization.arrayToDataTable(params2);
 			    			var options2 = {title:"Duty count by Crew base",
-												width:400,
+												width:300,
 							    				height:300,
 			                    			backgroundColor:"transparent",
 			                    			pieHole: 0.4,
@@ -223,13 +243,12 @@
 			 
 			    			var chart2 = new google.visualization.PieChart(document.getElementById('PieChartDutyByCrewBase'));
 			    			chart2.draw(data2, options2);
-			    											   
+										   
 						   }
 						}
 					}
+					
 				xhrGensol.send();
-																			 
-				
 			}
 
 			function printCountForArcType(type, count) {
@@ -333,31 +352,26 @@
 						</fieldset>
 					</div>
 					<div class="column">
-						toto tata<br>
-						toto<br>
-						tata<br>
-						tata<br>
-						tat<br>
-						tat<br>
-						ta<br>
-						t<br>
-					</div>
-					<div class="column">
 						<table style="text-align:right;">
 							<tr><td>Arc count:</td><td id="GencolNumberArcs" style="text-align:left;">Analyzing...</td></tr>
 							<tr><td>Task count:</td><td id="GencolNumberTasks" style="text-align:left;">Analyzing...</td></tr>
-							<tr><td>Stopping condition:</td><td id="GencolStopCond" style="text-align:left;">Analyzing...</td></tr>
-							<tr><td>Gap:</td><td id="GencolGap" style="text-align:left;">Analyzing...</td></tr>
-							<tr><td></td><td></td></tr>
-							<tr><td>Solution cost:</td><td id="GencolSolutionCost" style="text-align:left;">Analyzing...</td></tr>
 						</table>
 					</div>
 					<div class="column">
-						Node 0 free pieces:
+						<table style="text-align:right;">
+							<tr><td>Solution cost:</td><td id="EvalSolutionCost" style="text-align:left;">Analyzing...</td></tr>
+							<tr><td>Stopping condition:</td><td id="PrinterStopCond" style="text-align:left;">Analyzing...</td></tr>
+							<tr style="display:none;"><td>Gap:</td><td id="PrinterGap" style="text-align:left;">Analyzing...</td></tr>				
+						</table>
+						<div id="GaugeChartGap" align='center'>Connecting to Google...</div>
+					</div>
+					<div class="column">
+						<table style="text-align:right;">
+							<tr><td>Node 0 free pieces:</td><td id="GencolSolutionCost" style="text-align:left;">Analyzing...</td></tr>
+						</table>
 					</div>
 				</div>
 				
-			
 				<hr>
 			</div>
 
@@ -374,13 +388,14 @@
 				// Get the element with id="defaultOpen" and click on it
 				document.getElementById("defaultOpen").click();
 				
-				// Analyze the job
-				analyze();
-				
-				// Google charts
+				// Analyze the job and draw charts
 				console.log("Loading charts...");
 				google.charts.load('current', {packages:['corechart']});
-				google.charts.setOnLoadCallback(drawCharts);
+				google.charts.setOnLoadCallback(drawPieCharts);
+				
+				google.charts.load('current', {'packages':['gauge']});
+      		google.charts.setOnLoadCallback(drawGaugeChart);
+
 			</script>
 		</body>
 		
