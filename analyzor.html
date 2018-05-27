@@ -115,10 +115,8 @@
 		
 		<!-- JS FUNCTIONS -->
 		<script>
-			var ArcType = Object.freeze({"total":0, "technical":1, "joinup":2, "coffee":3, "mealbreak":4, "splitbreak":5});
-			
-			function drawGaugeChart() {
-				console.log("Drawing gauge chart...");
+			function drawCharts() {
+				console.log("Drawing charts...");
 				
 				var xhrGencol = new XMLHttpRequest();
 				xhrGencol.open("GET", "g001/gencol.log");
@@ -128,11 +126,21 @@
 							// Clean the test
 							document.getElementById('BrowserTest').innerHTML = "";
 							
-							// Gencol
-							document.getElementById('GennetTotalCount').innerHTML = printCountForArcType(ArcType.total, /Arcs +: +([0-9]+)/.exec(xhrGencol.responseText)[1]);
-							document.getElementById('GencolNumberArcs').innerHTML = printCountForArcType(ArcType.total, /Arcs +: +([0-9]+)/.exec(xhrGencol.responseText)[1]);
-							document.getElementById('GencolNumberTasks').innerHTML = printTaskCount(/Tasks +: +([0-9]+)/.exec(xhrGencol.responseText)[1]);
+							// Arc count				
+							var ArcCount = /Arcs +: +([0-9]+)/.exec(xhrGencol.responseText)[1];
+							if (ArcCount > 300000) {
+								var GoogleWarningIconWithTooltip = "<div class='tooltip'><i class='material-icons' style='font-size:15px;color:yellow'>warning</i><span class='tooltiptext'>Arc count is above the maximum recommended of 300 000.</span></div>";
+								ArcCount = ArcCount.toString() + GoogleWarningIconWithTooltip;
+							}
+							document.getElementById('GencolNumberArcs').innerHTML = ArcCount;
 							
+							// Task count
+							var TaskCount = /Tasks +: +([0-9]+)/.exec(xhrGencol.responseText)[1];
+							if (TaskCount > 1500) {
+								var GoogleWarningIconWithTooltip = "<div class='tooltip'><i class='material-icons' style='font-size:15px;color:yellow'>warning</i><span class='tooltiptext'>Task count is above the maximum recommended of 1500. You should use decomposition.</span></div>";
+								TaskCount = TaskCount.toString() + GoogleWarningIconWithTooltip;	
+							}
+							document.getElementById('GencolNumberTasks').innerHTML = TaskCount;		
 						}
 					}
 				}
@@ -142,23 +150,45 @@
 				xhrPrinter.open("GET", "printer.prt");
 				xhrPrinter.onload = function () {
 					if (xhrPrinter.readyState === 4 /*Done*/) {
-						if (xhrPrinter.status === 200 || xhrPrinter.status == 0) {
-							var CountByType = [];
-							CountByType[ArcType.joinup] = 22000;
-							CountByType[ArcType.coffee] = 55000;
-							CountByType[ArcType.total] = 999999;
+						if (xhrPrinter.status === 200 || xhrPrinter.status == 0) {												
+					      // We could put the regex in a loop and change only the index (twice), but it is too complicated for a prototype.
+					      var tmp;
+					      var results = [];
+							var reg = /by class:(?:\r\n|\r|\n).*(?:\r\n|\r|\n)(?:\r\n|\r|\n)\s+Class Name(?:\s+(\S+(?:\s\S+)?)){1}.*(?:\r\n|\r|\n).*(?:\r\n|\r|\n)\s+Total(?:\s+(\d+)\(\s*\d+\)){1}/g;
+							while (tmp = reg.exec(xhrPrinter.responseText)) {
+								results.push([tmp[1], tmp[2]]);
+							}
+							var reg = /by class:(?:\r\n|\r|\n).*(?:\r\n|\r|\n)(?:\r\n|\r|\n)\s+Class Name(?:\s+(\S+(?:\s\S+)?)){2}.*(?:\r\n|\r|\n).*(?:\r\n|\r|\n)\s+Total(?:\s+(\d+)\(\s*\d+\)){2}/g;
+							while (tmp = reg.exec(xhrPrinter.responseText)) {
+								results.push([tmp[1], tmp[2]]);
+							}
+							var reg = /by class:(?:\r\n|\r|\n).*(?:\r\n|\r|\n)(?:\r\n|\r|\n)\s+Class Name(?:\s+(\S+(?:\s\S+)?)){3}.*(?:\r\n|\r|\n).*(?:\r\n|\r|\n)\s+Total(?:\s+(\d+)\(\s*\d+\)){3}/g;
+							while (tmp = reg.exec(xhrPrinter.responseText)) {
+								results.push([tmp[1], tmp[2]]);
+							}
+							var reg = /by class:(?:\r\n|\r|\n).*(?:\r\n|\r|\n)(?:\r\n|\r|\n)\s+Class Name(?:\s+(\S+(?:\s\S+)?)){4}.*(?:\r\n|\r|\n).*(?:\r\n|\r|\n)\s+Total(?:\s+(\d+)\(\s*\d+\)){4}/g;
+							while (tmp = reg.exec(xhrPrinter.responseText)) {
+								results.push([tmp[1], tmp[2]]);
+							}
+							var reg = /by class:(?:\r\n|\r|\n).*(?:\r\n|\r|\n)(?:\r\n|\r|\n)\s+Class Name(?:\s+(\S+(?:\s\S+)?)){5}.*(?:\r\n|\r|\n).*(?:\r\n|\r|\n)\s+Total(?:\s+(\d+)\(\s*\d+\)){5}/g;
+							while (tmp = reg.exec(xhrPrinter.responseText)) {
+								results.push([tmp[1], tmp[2]]);					
+							}
 							
-							// Gennet
-							document.getElementById('GennetJoinupCount').innerHTML = printCountForArcType(ArcType.joinup, CountByType[ArcType.joinup]);
-							document.getElementById('GennetCoffeeCount').innerHTML = printCountForArcType(ArcType.coffee, CountByType[ArcType.coffee]);
-							//document.getElementById('GennetTotalCount').innerHTML = printCountForArcType(ArcType.total, CountByType[ArcType.total]);
+							var i;
+							for (i = 0; i< results.length; i++) {
+								//console.log(results[i][0] + results[i][1]);
+		
+								if (results[i][0] == "drop back")
+									document.getElementById('GennetDropBackCount').innerHTML = results[i][1];
+								else if (results[i][0] == "joinup")
+									document.getElementById('GennetJoinupCount').innerHTML = results[i][1];
+								else if (results[i][0] == "mealbreak")
+									document.getElementById('GennetMealCount').innerHTML = results[i][1]; 
+							}
 							
-							// Gencol
+							// Gap chart
 							var gap = /Gap +: +.*\( +(.*)%/.exec(xhrPrinter.responseText)[1];
-							document.getElementById('PrinterGap').innerHTML = gap + " %";
-							document.getElementById('PrinterStopCond').innerHTML = /Stopping condition +: +(.*)/.exec(xhrPrinter.responseText)[1];
-						
-							
         					var data = google.visualization.arrayToDataTable([
           							['Label', 'Value'],
           							['Gap (%)', parseFloat(gap)]
@@ -174,7 +204,9 @@
 
         					var chart = new google.visualization.Gauge(document.getElementById('GaugeChartGap'));
         					chart.draw(data, options);
-						
+        					
+        					// Stopping condition
+        					document.getElementById('PrinterStopCond').innerHTML = /Stopping condition +: +(.*)/.exec(xhrPrinter.responseText)[1];			
 						}
 					}
 				}
@@ -185,29 +217,36 @@
 				xhrEvaluation.onload = function () {
 					if (xhrEvaluation.readyState === 4 /*Done*/) {
 						if (xhrEvaluation.status === 200 || xhrEvaluation.status == 0) {
+							// Paid time
 							document.getElementById('EvalPaidTime').innerHTML = /Paid time +:(.*)/.exec(xhrEvaluation.responseText)[1];					
+							
+							// Solution cost
 							document.getElementById('EvalSolutionCost').innerHTML = /Total cost +:(.*) .*%/.exec(xhrEvaluation.responseText)[1];							
 						}
 					}
 				}
 				xhrEvaluation.send();																																		   
-			}
-				
-			function drawPieCharts() {		
-				console.log("Drawing pie charts...");
-				
+
 				var xhrGensol = new XMLHttpRequest();
 				xhrGensol.open("GET", "g001/gencol.sol");
 				xhrGensol.onload = function () {
 					if (xhrGensol.readyState === 4 /*Done*/) {
 						if (xhrGensol.status === 200 || xhrGensol.status == 0) {
-							// Gensol
+							// Assigned duties
 							document.getElementById('GensolAssignedDuties').innerHTML = /Cnb_duties [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1];
-							document.getElementById('GensolFreeDuties').innerHTML = printFreeDuties(/CspCrew [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1]);
 							
+							// Free duties
+							var FreeCount = /CspCrew [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1];
+							if (FreeCount > 0) {
+								var GoogleWarningIcon = "<i class='material-icons' style='font-size:15px;color:yellow'>warning</i>";
+								FreeCount = FreeCount.toString() + GoogleWarningIcon;
+								}
+							document.getElementById('GensolFreeDuties').innerHTML = FreeCount;
+							
+							// Duties by type chart
 							var match = {};	
 							var params1 = [['Duty type', 'Duty count']];						
-							var re1 = /Ctype_(.*) [0-9]+ ([0-9]+);/g
+							var re1 = /Ctype_(.*) [0-9]+ ([0-9]+);/g;
 							while (match = re1.exec(xhrGensol.responseText)){
 								params1.push([match[1], parseInt(match[2])]);
 							}
@@ -225,8 +264,9 @@
 							var chart1 = new google.visualization.PieChart(document.getElementById('PieChartDutyByDutyType'));
 							chart1.draw(data1, options1);
 
+        					// Duties by crew base chart
 							var params2 = [['Crew base', 'Duty count']];						
-							var re2 = /Cbase_(.*) [0-9]+ ([0-9]+);/g
+							var re2 = /Cbase_(.*) [0-9]+ ([0-9]+);/g;
 							while (match = re2.exec(xhrGensol.responseText)){
 								params2.push([match[1], parseInt(match[2])]);
 							}
@@ -242,50 +282,13 @@
 			     			};
 			 
 			    			var chart2 = new google.visualization.PieChart(document.getElementById('PieChartDutyByCrewBase'));
-			    			chart2.draw(data2, options2);
-										   
+			    			chart2.draw(data2, options2);					   
 						   }
 						}
 					}
 					
-				xhrGensol.send();
-			}
-
-			function printCountForArcType(type, count) {
-				var MaxCountByType = [];
-				MaxCountByType[ArcType.total] = 300000;
-				MaxCountByType[ArcType.joinup] = 50000;
-				MaxCountByType[ArcType.coffee] = 50000;
-				
-				if (count > MaxCountByType[type]) {
-					var GoogleWarningIconWithTooltip = "<div class='tooltip'><i class='material-icons' style='font-size:15px;color:yellow'>warning</i><span class='tooltiptext'>Arc count is above the maximum recommended of " +MaxCountByType[type].toString() + ".</span></div>";
-					return (count.toString() + GoogleWarningIconWithTooltip);
-				}
-				else
-					return (count.toString());
-			}
-			
-			function printFreeDuties(count) {
-				var MaxCount = 0;
-			
-				if (count > MaxCount) {
-					var GoogleWarningIcon = "<i class='material-icons' style='font-size:15px;color:yellow'>warning</i>";
-					return (count.toString() + GoogleWarningIcon);
-				}
-				else
-					return (count.toString());
-			}
-		
-			function printTaskCount(count) {
-				var MaxCount = 1500;
-			
-				if (count > MaxCount) {
-					var GoogleWarningIconWithTooltip = "<div class='tooltip'><i class='material-icons' style='font-size:15px;color:yellow'>warning</i><span class='tooltiptext'>Task count is above the maximum recommended of " +MaxCount.toString() + ". You should use decomposition.</span></div>";
-					return (count.toString() + GoogleWarningIconWithTooltip);
-				}
-				else
-					return (count.toString());
-			}
+				xhrGensol.send();						
+			} // drawCharts()
 		
 			function openTab(evt, tabId) {
 				// Hide content
@@ -304,6 +307,7 @@
 				document.getElementById(tabId).style.display = "block";
 				evt.currentTarget.className += " active";
 			}
+				
 		</script>
 	</head>
 
@@ -342,12 +346,12 @@
 					<div class="column">
 						<fieldset>
 							<legend>Arc count by break type</legend>
-							<table style="width:100%;text-align:right;">
-								<tr><td>Joinup:</td><td id="GennetJoinupCount" style="text-align:left;">Analyzing...</td></tr>
-								<tr><td>Coffee:</td><td id="GennetCoffeeCount" style="text-align:left;">Analyzing...</td></tr>
-								<tr><td>Mealbreak:</td><td id="GennetMealCount" style="text-align:left;">Analyzing...</td></tr>
-								<tr><td>Splitbreak:</td><td id="GennetSplitCount" style="text-align:left;">Analyzing...</td></tr>
-								<tr><td>Total:</td><td id="GennetTotalCount" style="text-align:left;">Analyzing...</td></tr>
+							<table style="width:100%;text-align:right;">				
+								<tr><td>Drop back:</td><td id="GennetDropBackCount" style="text-align:left;">0</td></tr>
+								<tr><td>Joinup:</td><td id="GennetJoinupCount" style="text-align:left;">0</td></tr>
+								<tr><td>Coffee:</td><td id="GennetCoffeeCount" style="text-align:left;">0</td></tr>
+								<tr><td>Mealbreak:</td><td id="GennetMealCount" style="text-align:left;">0</td></tr>
+								<tr><td>Splitbreak:</td><td id="GennetSplitCount" style="text-align:left;">0</td></tr>
 							</table>
 						</fieldset>
 					</div>
@@ -361,8 +365,7 @@
 						<table style="text-align:right;">
 							<tr><td>Solution cost:</td><td id="EvalSolutionCost" style="text-align:left;">Analyzing...</td></tr>
 							<tr><td>Stopping condition:</td><td id="PrinterStopCond" style="text-align:left;">Analyzing...</td></tr>
-							<tr style="display:none;"><td>Gap:</td><td id="PrinterGap" style="text-align:left;">Analyzing...</td></tr>				
-						</table>
+							</table>
 						<div id="GaugeChartGap" align='center'>Connecting to Google...</div>
 					</div>
 					<div class="column">
@@ -389,13 +392,8 @@
 				document.getElementById("defaultOpen").click();
 				
 				// Analyze the job and draw charts
-				console.log("Loading charts...");
-				google.charts.load('current', {packages:['corechart']});
-				google.charts.setOnLoadCallback(drawPieCharts);
-				
-				google.charts.load('current', {'packages':['gauge']});
-      		google.charts.setOnLoadCallback(drawGaugeChart);
-
+				google.charts.load('current', {packages:['corechart', 'gauge']});
+				google.charts.setOnLoadCallback(drawCharts);
 			</script>
 		</body>
 		
