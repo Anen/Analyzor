@@ -236,12 +236,14 @@
 							document.getElementById('GensolAssignedDuties').innerHTML = /Cnb_duties [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1];
 							
 							// Free duties
-							var FreeCount = /CspCrew [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText)[1];
-							if (FreeCount > 0) {
+							var FreeCount = /CspCrew [0-9]+ ([0-9]+);/.exec(xhrGensol.responseText);
+							if (FreeCount != null && FreeCount[1] > 0) {
 								var GoogleWarningIcon = "<i class='material-icons' style='font-size:15px;color:yellow'>warning</i>";
-								FreeCount = FreeCount.toString() + GoogleWarningIcon;
+								FreeCount[1] = FreeCount[1].toString() + GoogleWarningIcon;
+								document.getElementById('GensolFreeDuties').innerHTML = FreeCount[1];
 								}
-							document.getElementById('GensolFreeDuties').innerHTML = FreeCount;
+							else
+								document.getElementById('GensolFreeDuties').innerHTML = 0;
 							
 							// Duties by type chart
 							var match = {};	
